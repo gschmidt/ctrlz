@@ -9,7 +9,7 @@ var lastX = 0, lastY = 0;
 
 var mouseIsDown = false;
 
-function render() {
+var render = function () {
   ctx.globalCompositeOperation = "source-over";
   ctx.fillStyle = "rgba(8,8,12,.75)";
   ctx.fillRect(0, 0, width, height);
@@ -84,63 +84,67 @@ function render() {
       p.y = height;
     }
 
+    var sx = p.x;
+    var sy = p.y;
+    var r = 3;
+    var project = false;
 
-    // looks like a final nonlinear projection of the dots?
-    var tx = p.x / width * Math.PI * 2;
-    var ty = p.y / height * Math.PI;
-    var ab = -100 * Math.sin(ty) * Math.cos(tx) - 200;
-    if (!(ab < -300)) {
+    if (project) {
+      // Put the dots through a final nonlinear projection to make
+      // them look more interesting. I haven't figured out what the
+      // project is but it looks like it projects the plane onto a
+      // sphere, and then the sphere is collapsed back onto a plane by
+      // ignoring the z component (but changing the dot radius based
+      // on it.)
+      var tx = p.x / width * Math.PI * 2;
+      var ty = p.y / height * Math.PI;
       var ax = -100 * Math.sin(ty) * Math.sin(tx);
       var ay = -100 * Math.cos(ty);
-      var r = 300 / (300 + ab);
-      var sx = ax * r + width / 2;
-      var sy = ay * r + height / 2;
+      var az = -100 * Math.sin(ty) * Math.cos(tx) - 200;
 
-      // Draw a dot of radius r at (sx, sy) in p.color.
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(sx, sy, r, 0, Math.PI * 2, true);
-      ctx.closePath();
-      ctx.fill();
+      if (az < -300)
+        continue; // skip this one
+
+      sx = ax * r + width / 2;
+      sy = ay * r + height / 2;
+      r = 300 / (300 + az);
     }
-/*
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2, true);
-      ctx.closePath();
-      ctx.fill();
-*/
 
-
+    // Draw a dot of radius r at (sx, sy) in p.color.
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(sx, sy, r, 0, Math.PI * 2, true);
+    ctx.closePath();
+    ctx.fill();
   }
 };
 
-function resize() {
+var resize = function () {
   width = document.documentElement.clientWidth;
   height = document.documentElement.clientHeight;
   canvas.width = width;
   canvas.height = height;
 };
 
-function mouseMove(evt) {
+var mouseMove = function (evt) {
   evt = evt ? evt : window.event;
   curX = lastX = evt.pageX;
   curY = lastY = evt.pageY;
   document.onmousemove = mouseMove2;
 };
 
-function mouseMove2(evt) {
+var mouseMove2 = function (evt) {
   evt = evt ? evt : window.event;
   curX = evt.pageX;
   curY = evt.pageY;
 };
 
-function mouseDown() {
+var mouseDown = function () {
   mouseIsDown = true;
   return false;
 };
 
-function mouseUp() {
+var mouseUp = function () {
   mouseIsDown = false;
   return false;
 };
@@ -156,12 +160,9 @@ var Particle = function (x, y, vx, vy) {
     + ")";
 };
 
-window.onload = function () {
-  canvas = document.getElementById("mainCanvas");
-  ctx = canvas.getContext("2d");
-  resize();
+var createExplosion = function () {
+  particles = [];
 
-/*
   for (var i = 0; i < numParticles; i++) {
     var p = new Particle(
       // cos/sin give the initial burst a circular shape?
@@ -172,7 +173,10 @@ window.onload = function () {
     );
     particles.push(p);
   }
-*/
+};
+
+var createGrid = function () {
+  particles = [];
 
   for (var x = 0; x < 25; x++) {
     for (var y = 0; y < 25; y++) {
@@ -186,10 +190,19 @@ window.onload = function () {
       particles.push(p);
     }
   }
+};
 
-  document.onmousedown = mouseDown;
-  document.onmouseup = mouseUp;
-  document.onmousemove = mouseMove;
+
+window.onload = function () {
+  canvas = document.getElementById("mainCanvas");
+  ctx = canvas.getContext("2d");
+  resize();
+
+  createExplosion();
+
+  canvas.onmousedown = mouseDown;
+  canvas.onmouseup = mouseUp;
+  canvas.onmousemove = mouseMove;
   window.onresize = resize;
   resize();
   setInterval(render, 33);
