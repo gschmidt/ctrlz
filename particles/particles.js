@@ -118,9 +118,9 @@ var render = function () {
       if (az < -300)
         continue; // skip this one
 
+      r = 300 / (300 + az);
       sx = ax * r + width / 2;
       sy = ay * r + height / 2;
-      r = 300 / (300 + az);
     }
 
     // Draw a dot of radius r at (sx, sy) in p.color.
