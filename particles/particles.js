@@ -1,13 +1,53 @@
 var canvas, ctx;
 var width = 1000, height = 560;
-var numParticles = 550;
 var particles = [];
 var FRICTION = 0.96;
 
-var curX, curY;
-var lastX = 0, lastY = 0;
+var curX = null, curY = null;
+var lastX, lastY;
 
 var mouseIsDown = false;
+
+var applyMouseForces = function (p, curX, curY, moveX, moveY) {
+  var distFromMouse = Math.sqrt(
+    (p.x - curX) * (p.x - curX) +
+    (p.y - curY) * (p.y - curY));
+
+  var angle = Math.atan2(p.y - curY, p.x - curX);
+  var proj_x = Math.cos(angle);
+  var proj_y = Math.sin(angle);
+
+  // If the mouse button is down, and the particle is close to the
+  // mouse, accelerate the particle away from the mouse. The closer to
+  // the mouse, the greater the acceleration.
+  var repelRadius = width / 2;
+  if (mouseIsDown && distFromMouse < repelRadius) {
+    var r = (1 - distFromMouse / repelRadius) * 14;
+    p.vx += proj_x * r + 0.5 - Math.random();
+    p.vy += proj_y * r + 0.5 - Math.random();
+  }
+
+  // Accelerate all particles toward the mouse. (The closer they are
+  // to the mouse, the greater the acceleration.) Particles that are
+  // super far from the mouse, though, aren't affected.
+  var gravityRadius = width / 1.15;
+  if (distFromMouse < gravityRadius) {
+    var r = (1 - distFromMouse / gravityRadius) * width * 0.0014;
+    p.vx -= proj_x * r;
+    p.vy -= proj_y * r;
+  }
+
+  // If a particle is fairly close to the mouse, then accelerate it in
+  // the same direction as recent mouse movement. The faster the
+  // movement, and the closer the particle was to the mouse, the
+  // greater the acceleration.
+  var shoveRadius = width / 8;
+  if (distFromMouse < shoveRadius) {
+    var r = (1 - distFromMouse / shoveRadius) * width * .00022;
+    p.vx += moveX * r;
+    p.vy += moveY * r;
+  }
+};
 
 var render = function () {
   ctx.globalCompositeOperation = "source-over";
@@ -15,53 +55,20 @@ var render = function () {
   ctx.fillRect(0, 0, width, height);
   ctx.globalCompositeOperation = "lighter";
 
-  var moveX = curX - lastX;
-  var moveY = curY - lastY;
-  lastX = curX;
-  lastY = curY;
-
-  var halfWidth = width / 2;
-  var eighthWidth = width / 8;
-  var aBitLessThanWidth = width / 1.15;
+  if (curX !== null) {
+    var moveX = curX - lastX;
+    var moveY = curY - lastY;
+    lastX = curX;
+    lastY = curY;
+  }
 
   for (var i = 0; i < particles.length; i++) {
     var p = particles[i];
 
-    var distFromMouse = Math.sqrt(
-      (p.x - curX) * (p.x - curX) +
-      (p.y - curY) * (p.y - curY));
-
-    var angle = Math.atan2(p.y - curY, p.x - curX);
-    var proj_x = Math.cos(angle);
-    var proj_y = Math.sin(angle);
-
-    // If the mouse button is down, and the particle is close to the
-    // mouse, accelerate the particle away from the mouse. The closer
-    // to the mouse, the greater the acceleration.
-    if (mouseIsDown && distFromMouse < halfWidth) {
-      var r = (1 - distFromMouse / halfWidth) * 14;
-      p.vx += proj_x * r + 0.5 - Math.random();
-      p.vy += proj_y * r + 0.5 - Math.random();
-    }
-
-    // Accelerate all particles toward the mouse. (The closer they are
-    // to the mouse, the greater the acceleration.) Particles that are
-    // super far from the mouse, though, aren't affected.
-    if (distFromMouse < aBitLessThanWidth) {
-      var r = (1 - distFromMouse / aBitLessThanWidth) * width * 0.0014;
-      p.vx -= proj_x * r;
-      p.vy -= proj_y * r;
-    }
-
-    // If a particle is fairly close to the mouse, then accelerate it
-    // in the same direction as recent mouse movement. The faster the
-    // movement, and the closer the particle was to the mouse, the
-    // greater the acceleration.
-    if (distFromMouse < eighthWidth) {
-      var r = (1 - distFromMouse / eighthWidth) * width * .00022;
-      p.vx += moveX * r;
-      p.vy += moveY * r;
-    }
+    // Adjust the velocity based on the various force fields in the
+    // simulation (which are all based on the current mouse position.)
+    if (curX !== null)
+      applyMouseForces(p, curX, curY, moveX, moveY);
 
     // Velocity decays to zero over time.
     p.vx *= FRICTION;
@@ -126,29 +133,6 @@ var resize = function () {
   canvas.height = height;
 };
 
-var mouseMove = function (evt) {
-  evt = evt ? evt : window.event;
-  curX = lastX = evt.pageX;
-  curY = lastY = evt.pageY;
-  document.onmousemove = mouseMove2;
-};
-
-var mouseMove2 = function (evt) {
-  evt = evt ? evt : window.event;
-  curX = evt.pageX;
-  curY = evt.pageY;
-};
-
-var mouseDown = function () {
-  mouseIsDown = true;
-  return false;
-};
-
-var mouseUp = function () {
-  mouseIsDown = false;
-  return false;
-};
-
 var Particle = function (x, y, vx, vy) {
   this.x = x;
   this.y = y;
@@ -163,7 +147,7 @@ var Particle = function (x, y, vx, vy) {
 var createExplosion = function () {
   particles = [];
 
-  for (var i = 0; i < numParticles; i++) {
+  for (var i = 0; i < 550; i++) {
     var p = new Particle(
       // cos/sin give the initial burst a circular shape?
       width * 0.5,
@@ -192,18 +176,34 @@ var createGrid = function () {
   }
 };
 
-
 window.onload = function () {
   canvas = document.getElementById("mainCanvas");
   ctx = canvas.getContext("2d");
-  resize();
-
-  createExplosion();
-
-  canvas.onmousedown = mouseDown;
-  canvas.onmouseup = mouseUp;
-  canvas.onmousemove = mouseMove;
   window.onresize = resize;
   resize();
+
+  canvas.onmousemove = function (evt) {
+    var firstTime = (curX === null);
+
+    curX = evt.pageX;
+    curY = evt.pageY;
+
+    if (firstTime) {
+      lastX = curX;
+      lastY = curY;
+    }
+  };
+
+  canvas.onmousedown = function (evt) {
+    mouseIsDown = true;
+    return false;
+  };
+
+  canvas.onmouseup = function (evt) {
+    mouseIsDown = false;
+    return false;
+  };
+
+  createExplosion();
   setInterval(render, 33);
 };
