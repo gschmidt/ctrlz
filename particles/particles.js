@@ -1,7 +1,6 @@
 var canvas, ctx;
 var width = 1000, height = 560;
 var particles = [];
-var FRICTION = 0.96;
 
 var curX = null, curY = null;
 var lastX, lastY;
@@ -76,8 +75,8 @@ var render = function () {
       applyMouseForces(p, curX, curY, moveX, moveY);
 
     // Velocity decays to zero over time.
-    p.vx *= FRICTION;
-    p.vy *= FRICTION;
+    p.vx *= 0.96;
+    p.vy *= 0.96;
 
     // Update position based on velocity.
     p.x += p.vx;
@@ -132,13 +131,6 @@ var render = function () {
   }
 };
 
-var resize = function () {
-  width = document.documentElement.clientWidth;
-  height = document.documentElement.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
-};
-
 var Particle = function (x, y, vx, vy) {
   this.x = x;
   this.y = y;
@@ -171,7 +163,6 @@ var createGrid = function () {
   for (var x = 0; x < 25; x++) {
     for (var y = 0; y < 25; y++) {
       var p = new Particle(
-        // cos/sin give the initial burst a circular shape?
         (x / 25) * width,
         (y / 25) * width,
         0,
@@ -180,6 +171,13 @@ var createGrid = function () {
       particles.push(p);
     }
   }
+};
+
+var resize = function () {
+  width = document.documentElement.clientWidth;
+  height = document.documentElement.clientHeight;
+  canvas.width = width;
+  canvas.height = height;
 };
 
 window.onload = function () {
