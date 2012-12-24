@@ -1,3 +1,6 @@
+// from www.spielzeugz.de/html5/liquid-particles-3D/
+// deminified and cleaned up
+
 var canvas, ctx;
 var width = 1000, height = 560;
 var particles = [];
@@ -66,6 +69,14 @@ var render = function () {
     lastY = curY;
   }
 
+  // Is the "project" checkbox checked?
+  var project = document.getElementById("projectionCheckbox").checked;
+
+  // What is the current value of the friction dropdown?
+  var frictionDropdown = document.getElementById("frictionDropdown");
+  var friction = parseFloat(
+    frictionDropdown.options[frictionDropdown.selectedIndex].value);
+
   for (var i = 0; i < particles.length; i++) {
     var p = particles[i];
 
@@ -75,8 +86,8 @@ var render = function () {
       applyMouseForces(p, curX, curY, moveX, moveY);
 
     // Velocity decays to zero over time.
-    p.vx *= 0.96;
-    p.vy *= 0.96;
+    p.vx *= friction;
+    p.vy *= friction;
 
     // Update position based on velocity.
     p.x += p.vx;
@@ -98,7 +109,6 @@ var render = function () {
     var sx = p.x;
     var sy = p.y;
     var r = 3;
-    var project = true;
 
     if (project) {
       // Put the dots through a final nonlinear projection to make it
@@ -155,6 +165,8 @@ var createExplosion = function () {
     );
     particles.push(p);
   }
+
+  curX = curY = null;
 };
 
 var createGrid = function () {
@@ -171,13 +183,13 @@ var createGrid = function () {
       particles.push(p);
     }
   }
+
+  curX = curY = null;
 };
 
 var resize = function () {
-  width = document.documentElement.clientWidth;
-  height = document.documentElement.clientHeight;
-  canvas.width = width;
-  canvas.height = height;
+  width = canvas.width = document.documentElement.clientWidth - 200;
+  height = canvas.height = document.documentElement.clientHeight;
 };
 
 window.onload = function () {
@@ -207,6 +219,43 @@ window.onload = function () {
     mouseIsDown = false;
     return false;
   };
+
+  document.getElementById("explosionButton").onclick = createExplosion;
+  document.getElementById("gridButton").onclick = createGrid;
+
+  document.getElementById("randomizeVelocity").onclick = function () {
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.vx = (Math.random() - .5) * 20;
+      p.vy = (Math.random() - .5) * 20;
+    }
+  };
+
+  document.getElementById("zeroVelocity").onclick = function () {
+    for (var i = 0; i < particles.length; i++) {
+      var p = particles[i];
+      p.vx = p.vy = 0;
+    }
+    curX = curY = null;
+  };
+
+  document.getElementById("duplicate").onclick = function () {
+    var origCount = particles.length;
+    for (var i = 0; i < origCount; i++) {
+      var p = particles[i];
+      particles.push(new Particle(p.x, p.y, -p.vx, -p.vy));
+    }
+  };
+
+  document.getElementById("removeHalf").onclick = function () {
+    var oldParticles = particles;
+    particles = [];
+    for (var i = 0; i < oldParticles.length; i++) {
+      if (Math.random() < .5)
+        particles.push(oldParticles[i]);
+    }
+  };
+
 
   createExplosion();
   setInterval(render, 33);

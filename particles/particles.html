@@ -1,28 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
-<!-- from www.spielzeugz.de/html5/liquid-particles-3D/ -->
 
+<html>
   <head>
+    <link rel="stylesheet" type="text/css" href="particles.css">
     <script src="particles.js"> </script>
-    <style>
-      * {
-			margin:  0;
-			padding: 0;
-		}
-		body{
-			background-color: #000000;
-			overflow:         hidden;
-			color:            #999999;
-		}
-	</style>
   </head>
+
   <body>
+    <canvas id="mainCanvas"> </canvas>
+    <div id="controls">
+      <div class="contents">
 
-	<canvas id="mainCanvas" width="1000" height="560"> </canvas>
+        <div class="title">Particle system</div>
 
-	<script>
+        <div class="section">
+          <button id="explosionButton">Explosion</button>
+          <button id="gridButton">Grid</button>
+        </div>
 
-    </script>
+        <div class="section">
+          <input type="checkbox" id="projectionCheckbox" checked>
+          <label for="projectionCheckbox">Do projection</label>
+        </div>
 
+        <div class="section">
+          Friction
+          <select id="frictionDropdown">
+            <option value=".99">Low [.99]</option>
+            <option value=".96" selected>Normal [.96]</option>
+            <option value=".85">High [.85]</option>
+            <option value=".40">Very high [.40]</option>
+          </select>
+        </div>
+
+        <div class="section">
+          <button id="randomizeVelocity">Randomize velocity</button><br>
+          <button id="zeroVelocity">Zero velocity</button><br>
+          <button id="duplicate">Duplicate</button>
+          <button id="removeHalf">Remove 50%</button>
+        </div>
+
+      </div>
   </body>
 </html>
