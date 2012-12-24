@@ -8,7 +8,9 @@ var lastX, lastY;
 
 var mouseIsDown = false;
 
-var count = 0;
+// p: the particle to update
+// curX, curY: current position of the mouse
+// moveX, moveY: how much the mouse has moved since last update
 var applyMouseForces = function (p, curX, curY, moveX, moveY) {
   var distFromMouse = Math.sqrt(
     (p.x - curX) * (p.x - curX) +
@@ -97,15 +99,16 @@ var render = function () {
     var sx = p.x;
     var sy = p.y;
     var r = 3;
-    var project = false;
+    var project = true;
 
     if (project) {
-      // Put the dots through a final nonlinear projection to make
-      // them look more interesting. I haven't figured out what the
-      // project is but it looks like it projects the plane onto a
-      // sphere, and then the sphere is collapsed back onto a plane by
-      // ignoring the z component (but changing the dot radius based
-      // on it.)
+      // Put the dots through a final nonlinear projection to make it
+      // look more interesting. I haven't figured out what the
+      // projection is but it looks like it projects the plane onto a
+      // sphere, in such a way that a lot of space pinches together
+      // around the poles, and then the sphere is collapsed back onto
+      // a plane by ignoring the z component (but changing the dot
+      // radius based on it.)
       var tx = p.x / width * Math.PI * 2;
       var ty = p.y / height * Math.PI;
       var ax = -100 * Math.sin(ty) * Math.sin(tx);
