@@ -24,80 +24,94 @@ function render() {
   var eighthWidth = width / 8;
   var aBitLessThanWidth = width / 1.15;
 
-  for (var D = 0; D < numParticles; D++) {
-    var particle = particles[D];
-    var x = particle.x;
-    var y = particle.y;
-    var vx = particle.vx;
-    var vy = particle.vy;
+  for (var i = 0; i < particles.length; i++) {
+    var p = particles[i];
 
     var distFromMouse = Math.sqrt(
-      (x - curX) * (x - curX) +
-      (y - curY) * (y - curY));
+      (p.x - curX) * (p.x - curX) +
+      (p.y - curY) * (p.y - curY));
 
-    var angle = Math.atan2(y - curY, x - curX);
+    var angle = Math.atan2(p.y - curY, p.x - curX);
     var proj_x = Math.cos(angle);
     var proj_y = Math.sin(angle);
 
-    // Handle the case where the mouse button is down
+    // If the mouse button is down, and the particle is close to the
+    // mouse, accelerate the particle away from the mouse. The closer
+    // to the mouse, the greater the acceleration.
     if (mouseIsDown && distFromMouse < halfWidth) {
       var r = (1 - distFromMouse / halfWidth) * 14;
-      vx += proj_x * r + 0.5 - Math.random();
-      vy += proj_y * r + 0.5 - Math.random()
+      p.vx += proj_x * r + 0.5 - Math.random();
+      p.vy += proj_y * r + 0.5 - Math.random();
     }
 
+    // Accelerate all particles toward the mouse. (The closer they are
+    // to the mouse, the greater the acceleration.) Particles that are
+    // super far from the mouse, though, aren't affected.
     if (distFromMouse < aBitLessThanWidth) {
-      r = (1 - distFromMouse / aBitLessThanWidth) * width * 0.0014;
-      vx -= proj_x * r;
-      vy -= proj_y * r;
+      var r = (1 - distFromMouse / aBitLessThanWidth) * width * 0.0014;
+      p.vx -= proj_x * r;
+      p.vy -= proj_y * r;
     }
 
+    // If a particle is fairly close to the mouse, then accelerate it
+    // in the same direction as recent mouse movement. The faster the
+    // movement, and the closer the particle was to the mouse, the
+    // greater the acceleration.
     if (distFromMouse < eighthWidth) {
-      distFromMouse = (1 - distFromMouse / eighthWidth) * width * .00022;
-      vx += moveX * distFromMouse;
-      vy += moveY * distFromMouse;
+      var r = (1 - distFromMouse / eighthWidth) * width * .00022;
+      p.vx += moveX * r;
+      p.vy += moveY * r;
     }
 
-    vx *= FRICTION;
-    vy *= FRICTION;
-    x += vx;
-    y += vy;
+    // Velocity decays to zero over time.
+    p.vx *= FRICTION;
+    p.vy *= FRICTION;
 
-    // clamp x to [0, width]
-    if (x > width) {
-      x = 0;
-    } else if (x < 0) {
-      x = width;
+    // Update position based on velocity.
+    p.x += p.vx;
+    p.y += p.vy;
+
+    // Wrap particles around the screen (crudely)
+    if (p.x > width) {
+      p.x = 0;
+    } else if (p.x < 0) {
+      p.x = width;
     }
 
-    // clamp y to [0, height]
-    if (y > height) {
-      y = 0;
-    } else if (y < 0) {
-      y = height;
+    if (p.y > height) {
+      p.y = 0;
+    } else if (p.y < 0) {
+      p.y = height;
     }
 
-    particle.vx = vx;
-    particle.vy = vy;
-    particle.x = x;
-    particle.y = y;
-    vx = x / width * Math.PI * 2;
-    vy = y / height * Math.PI;
 
-    var ax = -100 * Math.sin(vy) * Math.sin(vx);
-    var ay = -100 * Math.cos(vy);
-    var ab = -100 * Math.sin(vy) * Math.cos(vx) - 200;
-
+    // looks like a final nonlinear projection of the dots?
+    var tx = p.x / width * Math.PI * 2;
+    var ty = p.y / height * Math.PI;
+    var ab = -100 * Math.sin(ty) * Math.cos(tx) - 200;
     if (!(ab < -300)) {
-      vx = 300 / (300 + ab);
-      vy = ax * vx + width / 2;
-      g = ay * vx + height / 2;
-      ctx.fillStyle = particle.color;
+      var ax = -100 * Math.sin(ty) * Math.sin(tx);
+      var ay = -100 * Math.cos(ty);
+      var r = 300 / (300 + ab);
+      var sx = ax * r + width / 2;
+      var sy = ay * r + height / 2;
+
+      // Draw a dot of radius r at (sx, sy) in p.color.
+      ctx.fillStyle = p.color;
       ctx.beginPath();
-      ctx.arc(vy, g, vx, 0, Math.PI * 2, true);
+      ctx.arc(sx, sy, r, 0, Math.PI * 2, true);
       ctx.closePath();
       ctx.fill();
     }
+/*
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2, true);
+      ctx.closePath();
+      ctx.fill();
+*/
+
+
   }
 };
 
@@ -131,12 +145,15 @@ function mouseUp() {
   return false;
 };
 
-var Particle = function () {
+var Particle = function (x, y, vx, vy) {
+  this.x = x;
+  this.y = y;
+  this.vx = vx;
+  this.vy = vy;
+
   this.color = "rgb(" + Math.floor(Math.random() * 255) + "," +
     Math.floor(Math.random() * 255) + "," + Math.floor(Math.random() * 255)
     + ")";
-
-  this.size = this.vx = this.vy = this.x = this.y = 0;
 };
 
 window.onload = function () {
@@ -144,15 +161,32 @@ window.onload = function () {
   ctx = canvas.getContext("2d");
   resize();
 
+/*
   for (var i = 0; i < numParticles; i++) {
-    var p = new Particle;
-    p.x = width * 0.5;
-    p.y = height * 0.5;
-    p.vx = Math.cos(i) * Math.random() * 40;
-    p.vy = Math.sin(i) * Math.random() * 20;
-    p.size = 2;
-    particles[i] = p;
+    var p = new Particle(
+      // cos/sin give the initial burst a circular shape?
+      width * 0.5,
+      height * 0.5,
+      Math.cos(i) * Math.random() * 40,
+      Math.sin(i) * Math.random() * 20
+    );
+    particles.push(p);
   }
+*/
+
+  for (var x = 0; x < 25; x++) {
+    for (var y = 0; y < 25; y++) {
+      var p = new Particle(
+        // cos/sin give the initial burst a circular shape?
+        (x / 25) * width,
+        (y / 25) * width,
+        0,
+        0
+      );
+      particles.push(p);
+    }
+  }
+
   document.onmousedown = mouseDown;
   document.onmouseup = mouseUp;
   document.onmousemove = mouseMove;
