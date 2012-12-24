@@ -8,14 +8,17 @@ var lastX, lastY;
 
 var mouseIsDown = false;
 
+var count = 0;
 var applyMouseForces = function (p, curX, curY, moveX, moveY) {
   var distFromMouse = Math.sqrt(
     (p.x - curX) * (p.x - curX) +
     (p.y - curY) * (p.y - curY));
 
-  var angle = Math.atan2(p.y - curY, p.x - curX);
-  var proj_x = Math.cos(angle);
-  var proj_y = Math.sin(angle);
+  // (dx, dy) is the vector from the current mouse position to this
+  // particle, normalized to unit length. (The original code used
+  // arctan to compute this.. sillies.)
+  var dx = (p.x - curX) / distFromMouse;
+  var dy = (p.y - curY) / distFromMouse;
 
   // If the mouse button is down, and the particle is close to the
   // mouse, accelerate the particle away from the mouse. The closer to
@@ -23,8 +26,8 @@ var applyMouseForces = function (p, curX, curY, moveX, moveY) {
   var repelRadius = width / 2;
   if (mouseIsDown && distFromMouse < repelRadius) {
     var r = (1 - distFromMouse / repelRadius) * 14;
-    p.vx += proj_x * r + 0.5 - Math.random();
-    p.vy += proj_y * r + 0.5 - Math.random();
+    p.vx += dx * r + 0.5 - Math.random();
+    p.vy += dy * r + 0.5 - Math.random();
   }
 
   // Accelerate all particles toward the mouse. (The closer they are
@@ -33,8 +36,8 @@ var applyMouseForces = function (p, curX, curY, moveX, moveY) {
   var gravityRadius = width / 1.15;
   if (distFromMouse < gravityRadius) {
     var r = (1 - distFromMouse / gravityRadius) * width * 0.0014;
-    p.vx -= proj_x * r;
-    p.vy -= proj_y * r;
+    p.vx -= dx * r;
+    p.vy -= dy * r;
   }
 
   // If a particle is fairly close to the mouse, then accelerate it in
